@@ -33,6 +33,7 @@ services:
       - POSTGRES_DB=airlinedb
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - ./sql:/docker-entrypoint-initdb.d
     networks:
       - airline-network
     deploy:
