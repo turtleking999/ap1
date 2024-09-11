@@ -116,7 +116,7 @@ func (s *overbookingService) AssessRisk(ctx context.Context, booking *models.Boo
 	}
 
 	// 考慮預訂時間與起飛時間的接近程度
-	timeUntilDeparture := booking.Flight.DepartureTime.Sub(time.Now())
+	timeUntilDeparture := time.Until(booking.Flight.DepartureTime)
 	if timeUntilDeparture < 24*time.Hour {
 		riskScore -= 0.3
 	}
