@@ -19,6 +19,7 @@ type FlightService interface {
 	SearchFlights(ctx context.Context, req models.SearchRequest) (string, error)
 	GetSearchResults(requestID string) ([]models.Flight, error)
 	ProcessSearchRequests()
+	GetSearchQueue() <-chan models.SearchRequest
 }
 
 type flightService struct {
@@ -120,4 +121,8 @@ func (s *flightService) storeResults(requestID string, flights []models.Flight) 
 	s.resultsMutex.Lock()
 	defer s.resultsMutex.Unlock()
 	s.results[requestID] = flights
+}
+
+func (s *flightService) GetSearchQueue() <-chan models.SearchRequest {
+	return s.searchQueue
 }

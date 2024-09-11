@@ -10,9 +10,14 @@ import (
 )
 
 var (
-	log    *zap.Logger
-	tracer opentracing.Tracer
+	log          *zap.Logger
+	tracer       opentracing.Tracer
+	globalLogger *zap.Logger
 )
+
+func init() {
+	globalLogger, _ = zap.NewDevelopment()
+}
 
 func Init() error {
 	var err error
@@ -77,5 +82,13 @@ func WithContext(ctx context.Context) *zap.Logger {
 }
 
 func LogWithTracing(ctx context.Context, msg string, fields ...zap.Field) {
-	WithContext(ctx).Info(msg, fields...)
+	if globalLogger == nil {
+		return // 或使用一個默認的 logger
+	}
+	globalLogger.Info(msg, fields...)
+}
+
+// 新增這個方法用於測試
+func SetLoggerForTest(l *zap.Logger) {
+	globalLogger = l
 }
