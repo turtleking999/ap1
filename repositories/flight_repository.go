@@ -1,13 +1,19 @@
 package repositories
 
 import (
+	"context"
 	"database/sql"
+	"time"
 
+	"airline-booking/logger"
 	"airline-booking/models"
+
+	"github.com/opentracing/opentracing-go"
+	"go.uber.org/zap"
 )
 
 type FlightRepository interface {
-	SearchFlights(req models.SearchRequest) ([]models.Flight, error)
+	SearchFlights(ctx context.Context, req models.SearchRequest) ([]models.Flight, error)
 }
 
 type flightRepository struct {
@@ -18,7 +24,18 @@ func NewFlightRepository(db *sql.DB) FlightRepository {
 	return &flightRepository{db: db}
 }
 
-func (r *flightRepository) SearchFlights(req models.SearchRequest) ([]models.Flight, error) {
+func (r *flightRepository) SearchFlights(ctx context.Context, req models.SearchRequest) ([]models.Flight, error) {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "FlightRepository.SearchFlights")
+	defer span.Finish()
+
+	startTime := time.Now()
+	defer func() {
+		logger.LogWithTracing(ctx, "Flight search completed",
+			zap.Duration("duration", time.Since(startTime)),
+			zap.String("origin", req.Origin),
+			zap.String("destination", req.Destination))
+	}()
+
 	offset := (req.Page - 1) * req.PageSize
 	query := `
 		SELECT id, origin, destination, departure_time, price, available_seats, total_seats
@@ -27,8 +44,14 @@ func (r *flightRepository) SearchFlights(req models.SearchRequest) ([]models.Fli
 		ORDER BY departure_time
 		LIMIT $4 OFFSET $5
 	`
-	rows, err := r.db.Query(query, req.Origin, req.Destination, req.Date, req.PageSize, offset)
+
+	// 使用 context 來執行查詢
+	rows, err := r.db.QueryContext(ctx, query, req.Origin, req.Destination, req.Date, req.PageSize, offset)
 	if err != nil {
+		logger.LogWithTracing(ctx, "Failed to execute flight search query",
+			zap.Error(err),
+			zap.String("origin", req.Origin),
+			zap.String("destination", req.Destination))
 		return nil, err
 	}
 	defer rows.Close()
@@ -38,10 +61,13 @@ func (r *flightRepository) SearchFlights(req models.SearchRequest) ([]models.Fli
 		var f models.Flight
 		err := rows.Scan(&f.ID, &f.Origin, &f.Destination, &f.DepartureTime, &f.Price, &f.AvailableSeats, &f.TotalSeats)
 		if err != nil {
+			logger.LogWithTracing(ctx, "Failed to scan flight row", zap.Error(err))
 			return nil, err
 		}
 		flights = append(flights, f)
 	}
+
+	span.SetTag("flights.count", len(flights))
 
 	return flights, nil
 }

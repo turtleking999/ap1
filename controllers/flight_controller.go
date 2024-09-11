@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"time"
 
 	"airline-booking/models"
 	"airline-booking/services"
@@ -25,12 +26,33 @@ func (c *FlightController) SearchFlights(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	flights, err := c.service.SearchFlights(req)
+	requestID, err := c.service.SearchFlights(ctx, req)
 	if err != nil {
 		ctx.Error(err.Error(), fasthttp.StatusInternalServerError)
 		return
 	}
 
-	ctx.SetContentType("application/json")
-	json.NewEncoder(ctx).Encode(flights)
+	ctx.SetStatusCode(fasthttp.StatusAccepted)
+	ctx.SetBodyString(requestID)
+}
+
+func (c *FlightController) GetSearchResults(ctx *fasthttp.RequestCtx) {
+	requestID := ctx.QueryArgs().Peek("request_id")
+	if requestID == nil {
+		ctx.Error("Missing request_id", fasthttp.StatusBadRequest)
+		return
+	}
+
+	maxRetries := 5
+	for i := 0; i < maxRetries; i++ {
+		flights, err := c.service.GetSearchResults(string(requestID))
+		if err == nil {
+			ctx.SetContentType("application/json")
+			json.NewEncoder(ctx).Encode(flights)
+			return
+		}
+		time.Sleep(time.Second) // 等待1秒後重試
+	}
+
+	ctx.Error("Results not ready, please try again later", fasthttp.StatusNotFound)
 }

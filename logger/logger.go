@@ -9,21 +9,21 @@ import (
 	"go.uber.org/zap"
 )
 
-var log *zap.Logger
+var (
+	log    *zap.Logger
+	tracer opentracing.Tracer
+)
 
-func Init() {
+func Init() error {
 	var err error
 	log, err = zap.NewProduction()
 	if err != nil {
-		panic(err)
+		return err
 	}
+	return nil
 }
 
-func GetLogger() *zap.Logger {
-	return log
-}
-
-func InitTracer(serviceName string) (opentracing.Tracer, error) {
+func InitTracer(serviceName string) error {
 	cfg := jaegercfg.Configuration{
 		ServiceName: serviceName,
 		Sampler: &jaegercfg.SamplerConfig{
@@ -35,20 +35,47 @@ func InitTracer(serviceName string) (opentracing.Tracer, error) {
 		},
 	}
 
-	tracer, _, err := cfg.NewTracer()
+	var err error
+	tracer, _, err = cfg.NewTracer()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	opentracing.SetGlobalTracer(tracer)
-	return tracer, nil
+	return nil
+}
+
+func GetLogger() *zap.Logger {
+	return log
+}
+
+func GetTracer() opentracing.Tracer {
+	return tracer
+}
+
+func Info(msg string, fields ...zap.Field) {
+	log.Info(msg, fields...)
+}
+
+func Error(msg string, fields ...zap.Field) {
+	log.Error(msg, fields...)
+}
+
+func Fatal(msg string, fields ...zap.Field) {
+	log.Fatal(msg, fields...)
+}
+
+func WithContext(ctx context.Context) *zap.Logger {
+	span := opentracing.SpanFromContext(ctx)
+	if span != nil {
+		return log.With(
+			zap.String("trace_id", span.Context().(jaeger.SpanContext).TraceID().String()),
+			zap.String("span_id", span.Context().(jaeger.SpanContext).SpanID().String()),
+		)
+	}
+	return log
 }
 
 func LogWithTracing(ctx context.Context, msg string, fields ...zap.Field) {
-	span := opentracing.SpanFromContext(ctx)
-	if span != nil {
-		fields = append(fields, zap.String("trace_id", span.Context().(jaeger.SpanContext).TraceID().String()))
-		fields = append(fields, zap.String("span_id", span.Context().(jaeger.SpanContext).SpanID().String()))
-	}
-	log.Info(msg, fields...)
+	WithContext(ctx).Info(msg, fields...)
 }

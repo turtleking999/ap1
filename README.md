@@ -2,24 +2,6 @@
 
 這是一個使用 Go 語言開發的航空訂票系統後端 API。
 
-## 項目架構
-airline-booking/
-├── config/
-│ └── config.go # 配置文件，包含數據庫和 Redis 初始化
-├── controllers/
-│ └── flight_controller.go # 處理 HTTP 請求的控制器
-├── models/
-│ └── flight.go # 數據模型定義
-├── repositories/
-│ └── flight_repository.go # 數據庫操作邏輯
-├── services/
-│ └── flight_service.go # 業務邏輯層
-├── main.go # 應用程序入口
-├── go.mod # Go 模塊定義
-├── go.sum # Go 模塊依賴版本
-├── Dockerfile # Docker 構建文件
-├── docker-compose.yml # Docker Compose 配置文件
-└── README.md # 項目說明文檔
 
 ## 技術棧
 
@@ -28,6 +10,54 @@ airline-booking/
 - Redis
 - Docker
 - fasthttp
+
+## 架構圖
+``` mermaid
+graph TD
+A[Client] -->|Request| B[Server]
+B --> C[Flight Controller]
+C --> D[Flight Service]
+D --> E[Flight Repo]
+E --> F[(PostgreSQL)]
+D --> G[(Redis Cache)]
+H[Config] --> B
+H --> F
+H --> G
+subgraph Docker
+B
+C
+D
+E
+F
+G
+H
+end
+
+```
+## 架構設計
+
+本系統採用了以下設計模式和技術：
+
+1. **分層架構**：將應用分為控制器（Controllers）、服務（Services）和儲存庫（Repositories）層，實現關注點分離。
+
+2. **依賴注入**：通過構造函數注入依賴，提高代碼的可測試性和靈活性。
+
+3. **內部消息隊列（MQ）**：使用 Go channel 實現了一個輕量級的內部消息隊列，用於處理高併發的搜索請求。這種設計可以:
+   - 減少對數據庫的直接壓力
+   - 提高系統的響應速度
+   - 更好地處理流量峰值
+
+4. **異步處理**：搜索請求被異步處理，客戶端可以通過訂閱或輪詢來獲取結果，提高了系統的吞吐量。
+
+5. **緩存策略**：使用 Redis 作為緩存層，減少對數據庫的訪問，提升查詢效率。
+
+6. **結構化日誌**：使用 zap 進行日誌記錄，提供了高性能和結構化的日誌輸出。
+
+7. **分佈式追蹤**：集成了 OpenTracing，使用 Jaeger 進行分佈式追蹤，便於監控和診斷系統性能。
+
+8. **路由器**：使用 fasthttp/router 實現路由，提供了更好的可擴展性和性能。
+
+
 
 ## 主要功能
 
@@ -119,7 +149,7 @@ airline-booking/
 ## 注意事項
 
 - 使用 Docker Compose 時，確保沒有其他服務佔用了 8080（應用）、5432（PostgreSQL）和 6379（Redis）端口。
-- 在生產環境中，請適當調整 `docker-compose.yml` 中的配置以確保安全性和性能。
+- 在生產環境中，請適當��整 `docker-compose.yml` 中的配置以確保安全性和性能。
 - 本項目使用 fasthttp 作為 HTTP 服務器，提供高性能的請求處理。
 
 ## 貢獻
