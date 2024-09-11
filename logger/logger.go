@@ -88,7 +88,6 @@ func LogWithTracing(ctx context.Context, msg string, fields ...zap.Field) {
 	globalLogger.Info(msg, fields...)
 }
 
-// 新增這個方法用於測試
 func SetLoggerForTest(l *zap.Logger) {
 	globalLogger = l
 }

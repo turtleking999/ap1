@@ -42,7 +42,6 @@ func NewFlightService(repo repositories.FlightRepository, redis *redis.Client) F
 func (s *flightService) SearchFlights(ctx context.Context, req models.SearchRequest) (string, error) {
 	requestID := fmt.Sprintf("%s-%s-%s-%d", req.Origin, req.Destination, req.Date.Format("2006-01-02"), time.Now().UnixNano())
 
-	// 將請求發送到 channel
 	s.searchQueue <- req
 
 	logger.LogWithTracing(ctx, "Search request queued",

@@ -22,7 +22,7 @@ func init() {
 }
 
 func TestFlightService_SearchFlights(t *testing.T) {
-	// 為每個測試設置一個新的 logger
+
 	testLogger, _ := zap.NewDevelopment()
 	logger.SetLoggerForTest(testLogger)
 
