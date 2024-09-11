@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  app:
+    container_name: airline-booking-app
+    build: .
+    image: airline-booking:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=airlineuser
+      - DB_PASSWORD=airlinepass
+      - DB_NAME=airlinedb
+      - REDIS_ADDR=redis:6379
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - airline-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  postgres:
+    container_name: airline-postgres
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=airlineuser
+      - POSTGRES_PASSWORD=airlinepass
+      - POSTGRES_DB=airlinedb
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - airline-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  redis:
+    container_name: airline-redis
+    image: redis:6
+    networks:
+      - airline-network
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+networks:
+  airline-network:
+    name: airline-network
+
+volumes:
+  postgres-data:
