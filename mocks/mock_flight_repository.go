@@ -8,6 +8,7 @@ import (
 	models "airline-booking/models"
 	context "context"
 	reflect "reflect"
+	time "time"
 
 	gomock "github.com/golang/mock/gomock"
 )
@@ -35,6 +36,36 @@ func (m *MockFlightRepository) EXPECT() *MockFlightRepositoryMockRecorder {
 	return m.recorder
 }
 
+// GetFlightByID mocks base method.
+func (m *MockFlightRepository) GetFlightByID(ctx context.Context, flightID int) (*models.Flight, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFlightByID", ctx, flightID)
+	ret0, _ := ret[0].(*models.Flight)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetFlightByID indicates an expected call of GetFlightByID.
+func (mr *MockFlightRepositoryMockRecorder) GetFlightByID(ctx, flightID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFlightByID", reflect.TypeOf((*MockFlightRepository)(nil).GetFlightByID), ctx, flightID)
+}
+
+// GetHistoricalNoShowRate mocks base method.
+func (m *MockFlightRepository) GetHistoricalNoShowRate(ctx context.Context, route string, dayOfWeek time.Weekday) (models.HistoricalData, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetHistoricalNoShowRate", ctx, route, dayOfWeek)
+	ret0, _ := ret[0].(models.HistoricalData)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetHistoricalNoShowRate indicates an expected call of GetHistoricalNoShowRate.
+func (mr *MockFlightRepositoryMockRecorder) GetHistoricalNoShowRate(ctx, route, dayOfWeek interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHistoricalNoShowRate", reflect.TypeOf((*MockFlightRepository)(nil).GetHistoricalNoShowRate), ctx, route, dayOfWeek)
+}
+
 // SearchFlights mocks base method.
 func (m *MockFlightRepository) SearchFlights(ctx context.Context, req models.SearchRequest) ([]models.Flight, error) {
 	m.ctrl.T.Helper()
@@ -48,4 +79,18 @@ func (m *MockFlightRepository) SearchFlights(ctx context.Context, req models.Sea
 func (mr *MockFlightRepositoryMockRecorder) SearchFlights(ctx, req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchFlights", reflect.TypeOf((*MockFlightRepository)(nil).SearchFlights), ctx, req)
+}
+
+// UpdateFlight mocks base method.
+func (m *MockFlightRepository) UpdateFlight(ctx context.Context, flight *models.Flight) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateFlight", ctx, flight)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateFlight indicates an expected call of UpdateFlight.
+func (mr *MockFlightRepositoryMockRecorder) UpdateFlight(ctx, flight interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateFlight", reflect.TypeOf((*MockFlightRepository)(nil).UpdateFlight), ctx, flight)
 }

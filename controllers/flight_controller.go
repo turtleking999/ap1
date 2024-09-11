@@ -51,7 +51,7 @@ func (c *FlightController) GetSearchResults(ctx *fasthttp.RequestCtx) {
 			json.NewEncoder(ctx).Encode(flights)
 			return
 		}
-		time.Sleep(time.Second) // 等待1秒後重試
+		time.Sleep(time.Second)
 	}
 
 	ctx.Error("Results not ready, please try again later", fasthttp.StatusNotFound)

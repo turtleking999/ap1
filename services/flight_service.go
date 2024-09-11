@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -79,7 +80,6 @@ func (s *flightService) processRequest(ctx context.Context, req models.SearchReq
 	cacheKey := fmt.Sprintf("flights:%s:%s:%s:%d:%d",
 		req.Origin, req.Destination, req.Date.Format("2006-01-02"), req.Page, req.PageSize)
 
-	// 檢查 Redis 緩存
 	cachedData, err := s.redis.Get(ctx, cacheKey).Bytes()
 	if err == nil {
 		var flights []models.Flight
@@ -93,7 +93,6 @@ func (s *flightService) processRequest(ctx context.Context, req models.SearchReq
 	// 如果緩存中沒有，則從數據庫中搜索
 	flights, err := s.repo.SearchFlights(ctx, req)
 	if err != nil {
-		// 處理錯誤，可能需要記錄日誌
 		return err
 	}
 
@@ -111,7 +110,6 @@ func (s *flightService) processRequest(ctx context.Context, req models.SearchReq
 		}
 	}
 
-	// 存儲結果
 	s.storeResults(cacheKey, flights)
 	return nil
 }
@@ -124,4 +122,34 @@ func (s *flightService) storeResults(requestID string, flights []models.Flight) 
 
 func (s *flightService) GetSearchQueue() <-chan models.SearchRequest {
 	return s.searchQueue
+}
+
+func (s *flightService) calculateAvailableSeats(flight *models.Flight, class string) int {
+	switch class {
+	case "economy":
+		return int(float64(flight.EconomySeats.Total)*(1+flight.EconomySeats.OverbookingRatio)) - flight.EconomySeats.Booked
+	case "business":
+		return int(float64(flight.BusinessSeats.Total)*(1+flight.BusinessSeats.OverbookingRatio)) - flight.BusinessSeats.Booked
+	case "first":
+		return int(float64(flight.FirstClassSeats.Total)*(1+flight.FirstClassSeats.OverbookingRatio)) - flight.FirstClassSeats.Booked
+	default:
+		return 0
+	}
+}
+
+func (s *flightService) BookFlight(ctx context.Context, flightID int, class string, numSeats int) error {
+	flight, err := s.repo.GetFlightByID(ctx, flightID)
+	if err != nil {
+		return err
+	}
+
+	availableSeats := s.calculateAvailableSeats(flight, class)
+	if numSeats > availableSeats {
+		return errors.New("not enough seats available")
+	}
+
+	// 執行預訂邏輯
+	// ...
+
+	return nil
 }
